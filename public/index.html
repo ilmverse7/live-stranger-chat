@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Live Stranger Chat</title>
+  <style>
+    body { font-family: Arial; margin: 20px; }
+    #chat { border: 1px solid #ccc; height: 300px; overflow-y: auto; padding: 10px; }
+    #input { width: 80%; }
+    #send { width: 18%; }
+  </style>
+</head>
+<body>
+  <h2>Live Stranger Chat</h2>
+  <div id="status">Connecting...</div>
+  <div id="chat"></div>
+  <input id="input" autocomplete="off" placeholder="Type your message..." />
+  <button id="send">Send</button>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('input');
+    const sendBtn = document.getElementById('send');
+    const status = document.getElementById('status');
+
+    function addMessage(msg, isMine) {
+      const p = document.createElement('p');
+      p.textContent = msg;
+      p.style.textAlign = isMine ? 'right' : 'left';
+      chat.appendChild(p);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    sendBtn.onclick = () => {
+      const msg = input.value.trim();
+      if (msg) {
+        addMessage(`You: ${msg}`, true);
+        socket.emit('message', msg);
+        input.value = '';
+      }
+    };
+
+    socket.on('connect', () => {
+      status.textContent = 'Connected. Waiting for partner...';
+    });
+
+    socket.on('waiting', () => {
+      status.textContent = 'Waiting for a stranger to join...';
+    });
+
+    socket.on('chat start', () => {
+      status.textContent = 'You are connected to a stranger. Say hi!';
+      chat.innerHTML = '';
+    });
+
+    socket.on('message', (msg) => {
+      addMessage(`Stranger: ${msg}`, false);
+    });
+
+    socket.on('partner disconnected', () => {
+      status.textContent = 'Stranger disconnected. Refresh to find a new partner.';
+    });
+  </script>
+</body>
+</html>
